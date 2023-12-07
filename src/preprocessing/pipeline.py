@@ -38,6 +38,10 @@ def create_preprocess_pipelines(
             vars=[data_schema.target] + data_schema.past_covariates,
             cast_type=float
         )),
+        ("time_col_caster", transformers.TimeColCaster(
+            time_col=data_schema.time_col,
+            data_type=data_schema.time_col_dtype
+        )),
         ("df_sorter", transformers.DataFrameSorter(
             sort_columns=[data_schema.id_col, data_schema.time_col],
             ascending=[True, True]
@@ -54,11 +58,12 @@ def create_preprocess_pipelines(
     training_steps.extend([
         ("window_generator", transformers.TimeSeriesWindowGenerator(
             window_size=encode_len+data_schema.forecast_length,
-            stride=1
+            stride=1,
+            max_windows=10000
         )),
-        # ("left_right_flipper", transformers.LeftRightFlipper(
-        #     axis_to_flip=1
-        # )),
+        ("left_right_flipper", transformers.LeftRightFlipper(
+            axis_to_flip=1
+        )),
         ("minmax_scaler", transformers.TimeSeriesMinMaxScaler(
             encode_len=encode_len,
             upper_bound=preprocessing_config["scaler_max_bound"],
@@ -67,7 +72,7 @@ def create_preprocess_pipelines(
     # inference-specific steps
     inference_steps.extend([
         ("series_len_trimmer", transformers.SeriesLengthTrimmer(
-            trimmed_len=encode_len+data_schema.forecast_length
+            trimmed_len=encode_len
         )),
         ("minmax_scaler", transformers.TimeSeriesMinMaxScaler(
             encode_len=encode_len,

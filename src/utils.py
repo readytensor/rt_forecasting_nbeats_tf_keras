@@ -82,6 +82,26 @@ def read_csv_in_directory(file_dir_path: str) -> pd.DataFrame:
     return df
 
 
+def cast_time_col(data: pd.DataFrame, time_col: str, dtype: str) -> pd.DataFrame:
+    """_summary_
+
+    Args:
+        data (pd.DataFrame): dataframe
+        time_col (str): name of the time field
+        dtype (str): type of time field ('INT', 'DATE', or 'DATETIME')
+
+    Returns:
+        pd.DataFrame: updated dataframe with time col appropriately cast
+    """
+    data = data.copy()
+    if dtype == "INT":
+        data[time_col] = data[time_col].astype(int)
+    elif dtype in ["DATETIME", "DATE"]:
+        data[time_col] = pd.to_datetime(data[time_col])
+    else:
+        raise ValueError(f"Invalid data type for time column: {dtype}")
+    return data
+
 def set_seeds(seed_value: int) -> None:
     """
     Set the random seeds for Python, NumPy, etc. to ensure

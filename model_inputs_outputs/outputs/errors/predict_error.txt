@@ -1,0 +1,18 @@
+Error occurred during prediction. Error: Length of values (24480) does not match length of index (4080)
+Traceback (most recent call last):
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\src\predict.py", line 155, in run_batch_predictions
+    predictions_df = create_predictions_dataframe(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\src\predict.py", line 60, in create_predictions_dataframe
+    predictions_df[prediction_field_name] = np.squeeze(predictions_arr).flatten()
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\venv\Lib\site-packages\pandas\core\frame.py", line 4094, in __setitem__
+    self._set_item(key, value)
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\venv\Lib\site-packages\pandas\core\frame.py", line 4303, in _set_item
+    value, refs = self._sanitize_column(value)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\venv\Lib\site-packages\pandas\core\frame.py", line 5042, in _sanitize_column
+    com.require_length_match(value, self.index)
+  File "C:\Users\abbus\Documents\GitRepos\rt_repos\rt-models\forecasting\rt_forecasting_nbeats\venv\Lib\site-packages\pandas\core\common.py", line 561, in require_length_match
+    raise ValueError(
+ValueError: Length of values (24480) does not match length of index (4080)

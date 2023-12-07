@@ -2,7 +2,7 @@ import os
 import sys
 import warnings
 from typing import List, Union
-from tqdm import tqdm
+import math
 
 import joblib
 import numpy as np
@@ -32,6 +32,12 @@ MODEL_PARAMS_FNAME = "model_params.save"
 MODEL_WTS_FNAME = "model_wts.save"
 HISTORY_FNAME = "history.json"
 COST_THRESHOLD = float("inf")
+
+
+def get_patience_factor(N): 
+    # magic number - just picked through trial and error
+    patience = max(4, int(38 - math.log(N, 1.5)))
+    return patience
 
 
 class Forecaster:
@@ -143,9 +149,7 @@ class Forecaster:
                 E = data[:, -self.backcast_length:, 1:]
             else:
                 E = None
-        
         return X, y, E
-
 
     def _train_on_data(self, data, validation_split=0.1, verbose=1, max_epochs=500):
         """Train the model on the given data.
@@ -155,10 +159,12 @@ class Forecaster:
         """
         X, y, E = self._get_X_y_and_E(data, is_train=True)
         loss_to_monitor = 'loss' if validation_split is None else 'val_loss'
-        early_stop_callback = EarlyStopping(monitor=loss_to_monitor, min_delta = 1e-4, patience=6)
+        patience = get_patience_factor(X.shape[0])
+        early_stop_callback = EarlyStopping(
+            monitor=loss_to_monitor, min_delta = 1e-4, patience=patience)
         learning_rate_reduction = ReduceLROnPlateau(
             monitor=loss_to_monitor,
-            patience=3,
+            patience=patience//2,
             factor=0.5,
             min_lr=1e-7
         )
@@ -169,14 +175,15 @@ class Forecaster:
             verbose=verbose,
             epochs=max_epochs,
             callbacks=[early_stop_callback, learning_rate_reduction],
-            batch_size=self.BATCH_SIZE
+            batch_size=self.BATCH_SIZE,
+            shuffle=True
         )
         # recompile the model to reset the optimizer; otherwise re-training slows down
         self.model.compile_model(self.loss, self.learning_rate)
         return history
 
     def fit(self, training_data:np.ndarray, pre_training_data: Union[np.ndarray, None]=None,
-            validation_split: Union[float, None]=0.1, verbose:int=0,
+            validation_split: Union[float, None]=0.15, verbose:int=0,
             max_epochs:int=2000):
 
         """Fit the Forecaster to the training data.

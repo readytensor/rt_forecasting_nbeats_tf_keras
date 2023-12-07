@@ -99,7 +99,7 @@ def get_encode_len(train_data, data_schema, encode_to_decode_ratio):
         raise ValueError(
             f"History length ({history_len}) must be at least 2x forecast length ({decode_len})"
         )
-    target_encode_len = decode_len * encode_to_decode_ratio
+    target_encode_len = int(decode_len * encode_to_decode_ratio)
     train_history_len = history_len - decode_len
 
     if train_history_len < target_encode_len:

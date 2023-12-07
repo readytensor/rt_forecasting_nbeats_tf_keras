@@ -15,7 +15,12 @@ from preprocessing.preprocess import (
     inverse_scale_predictions
 )
 from schema.data_schema import load_saved_schema
-from utils import read_csv_in_directory, read_json_as_dict, save_dataframe_as_csv
+from utils import (
+    read_csv_in_directory,
+    read_json_as_dict,
+    save_dataframe_as_csv,
+    cast_time_col
+)
 
 logger = get_logger(task_name="predict")
 
@@ -61,9 +66,7 @@ def run_batch_predictions(
     model_config_file_path: str = paths.MODEL_CONFIG_FILE_PATH,
     train_dir: str = paths.TRAIN_DIR,
     test_dir: str = paths.TEST_DIR,
-    preprocessing_config_file_path: str = paths.PREPROCESSING_CONFIG_FILE_PATH,
     preprocessing_dir_path: str = paths.PREPROCESSING_DIR_PATH,
-    default_hyperparameters_file_path: str = paths.DEFAULT_HYPERPARAMETERS_FILE_PATH,
     predictor_dir_path: str = paths.PREDICTOR_DIR_PATH,
     predictions_file_path: str = paths.PREDICTIONS_FILE_PATH,
 ) -> None:
@@ -80,9 +83,9 @@ def run_batch_predictions(
     Args:
         saved_schema_dir_path (str): Dir path to the saved data schema.
         model_config_file_path (str): Path to the model configuration file.
+        train_dir (str): Directory path for the train data.
         test_dir (str): Directory path for the test data.
-        pipeline_file_path (str): Path to the saved pipeline file.
-        target_encoder_file_path (str): Path to the saved target encoder file.
+        preprocessing_dir_path (str): Path to the saved pipeline file.
         predictor_file_path (str): Path to the saved predictor model file.
         predictions_file_path (str): Path where the predictions file will be saved.
     """
@@ -103,10 +106,18 @@ def run_batch_predictions(
         validated_train_data = validate_data(
             data=train_data, data_schema=data_schema, is_train=True
         )
+        # print(validated_train_data.head())
+        # # aotizhongxin_aq
+        # validated_train_data = validated_train_data[validated_train_data['station'] == 'aotizhongxin_aq']
+        # print(validated_train_data.head())
+        # print(validated_train_data.tail())
+        # print(validated_train_data.shape)
         
         # we need the test data to return our final predictions with right columns
         logger.info("Loading test data...")
         test_data = read_csv_in_directory(file_dir_path=test_dir)
+        test_data = cast_time_col(
+            test_data, data_schema.time_col, data_schema.time_col_dtype)
         logger.info("Validating test data...")
         validated_test_data = validate_data(
             data=test_data, data_schema=data_schema, is_train=False
@@ -122,6 +133,7 @@ def run_batch_predictions(
             inference_pipeline, validated_train_data
         )
         print(transformed_train_data.shape)
+        # print("min/max", transformed_train_data[0, :, 0].max(), transformed_train_data[0, :, 0].min())
 
         logger.info("Loading predictor model...")
         predictor_model = load_predictor_model(predictor_dir_path)
@@ -131,11 +143,13 @@ def run_batch_predictions(
             predictor_model,
             transformed_train_data
         )
+        print("predictions_arr", predictions_arr.shape)
 
         logger.info("Rescaling predictions...")
         rescaled_preds_arr = inverse_scale_predictions(
             predictions_arr, inference_pipeline
-        )
+        )     
+        print("rescaled_preds_arr", rescaled_preds_arr.shape)   
 
         logger.info("Creating final predictions dataframe...")
         predictions_df = create_predictions_dataframe(

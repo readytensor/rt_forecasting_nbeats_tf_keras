@@ -100,6 +100,56 @@ class TypeCaster(BaseEstimator, TransformerMixin):
                 # all values are null. so no-op
                 pass
         return data
+    
+
+class TimeColCaster(BaseEstimator, TransformerMixin):
+    """
+    A custom transformer that casts the time col in the input data
+    to either a datetime type or the integer type, given its type
+    in the schema.
+    """
+
+    def __init__(self, time_col: str, data_type: str):
+        """
+        Initializes a new instance of the `TimeColCaster` class.
+
+        Args:
+            time_col (str): Name of the time field.
+            cast_type (str): Data type to which the specified variables 
+                             will be cast.
+        """
+        super().__init__()
+        self.time_col = time_col
+        self.data_type = data_type
+
+    def fit(self, X: pd.DataFrame, y=None):
+        """
+        No-op.
+
+        Returns:
+            self
+        """
+        return self
+
+    def transform(self, data: pd.DataFrame):
+        """
+        Applies the casting to given features in input dataframe.
+
+        Args:
+            data : pandas DataFrame
+                Input data to be transformed.
+        Returns:
+            data : pandas DataFrame
+                Transformed data.
+        """
+        data = data.copy()
+        if self.data_type == "INT":
+            data[self.time_col] = data[self.time_col].astype(int)
+        elif self.data_type in ["DATETIME", "DATE"]:
+            data[self.time_col] = pd.to_datetime(data[self.time_col])
+        else:
+            raise ValueError(f"Invalid data type for time column: {self.data_type}")
+        return data
 
 
 class DataFrameSorter(BaseEstimator, TransformerMixin):
@@ -141,7 +191,8 @@ class DataFrameSorter(BaseEstimator, TransformerMixin):
         Returns:
             pandas.DataFrame: The sorted DataFrame.
         """
-        return X.sort_values(by=self.sort_columns, ascending=self.ascending)
+        X = X.sort_values(by=self.sort_columns, ascending=self.ascending)
+        return X
 
 
 class ReshaperToThreeD(BaseEstimator, TransformerMixin):
@@ -182,7 +233,7 @@ class ReshaperToThreeD(BaseEstimator, TransformerMixin):
         preds_df.columns = cols
 
         # unpivot given dataframe
-        preds_df = pd.melt(preds_df, 
+        preds_df = pd.melt(preds_df,
             id_vars=self.id_columns,
             value_vars=time_cols,
             var_name = self.time_column,
@@ -192,80 +243,18 @@ class ReshaperToThreeD(BaseEstimator, TransformerMixin):
         return  preds_df
 
 
-# class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
-#     """
-#     A transformer for generating windows from time-series data.
-#     """
-
-#     def __init__(self, window_size: int, stride: int=1):
-#         """
-#         Initializes the TimeSeriesWindowGenerator.
-
-#         Args:
-#             window_size (int): The size of each window (W).
-#             stride (int): The stride between each window.
-#         """
-#         self.window_size = window_size
-#         self.stride = stride
-
-#     def fit(self, X, y=None):
-#         """
-#         No-op. This transformer does not require fitting.
-        
-#         Returns:
-#             self
-#         """
-#         return self
-
-#     def transform(self, X):
-#         """
-#         Transforms the input time-series data into windows using vectorized operations.
-
-#         Args:
-#             X (numpy.ndarray): Input time-series data of shape [N, T, D].
-
-#         Returns:
-#             numpy.ndarray: Transformed data of shape [N', W, D] where N' is the number of windows.
-#         """
-#         n_series, time_length, n_features = X.shape
-
-#         # Validate window size and stride
-#         if self.window_size > time_length:
-#             raise ValueError("Window size must be less than or equal to the time dimension length")
-
-#         # Calculate the total number of windows per series
-#         n_windows_per_series = 1 + (time_length - self.window_size) // self.stride
-
-#         # Create an array of starting indices for each window
-#         start_indices = np.arange(0, n_windows_per_series * self.stride, self.stride)
-
-#         # Use broadcasting to generate window indices
-#         window_indices = start_indices[:, None] + np.arange(self.window_size)
-
-#         # Generate windows for each series using advanced indexing
-#         windows = X[:, window_indices, :]
-
-#         # Reshape to the desired output format [N' (total windows across all series), W, D]
-#         windows = windows.transpose(1, 0, 2, 3).reshape(-1, self.window_size, n_features)
-
-#         return windows
-
-
 class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
     """
-    A transformer for generating windows from time-series data with an option to limit
-    the maximum number of windows.
+    A transformer for generating windows from time-series data.
     """
 
-    def __init__(self, window_size: int, stride: int = 1, max_windows: int = 5000):
+    def __init__(self, window_size: int, stride: int=1, max_windows: int = 10000):
         """
         Initializes the TimeSeriesWindowGenerator.
 
         Args:
             window_size (int): The size of each window (W).
             stride (int): The stride between each window.
-            max_windows (int, optional): The maximum number of windows to randomly
-            select per series.
         """
         self.window_size = window_size
         self.stride = stride
@@ -280,25 +269,21 @@ class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
         """
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X):
         """
         Transforms the input time-series data into windows using vectorized operations.
-        Randomly selects a maximum number of windows if max_windows is specified.
 
         Args:
             X (numpy.ndarray): Input time-series data of shape [N, T, D].
 
         Returns:
-            numpy.ndarray: Transformed data of shape [N', W, D] where N' is the number
-                           of windows (up to max_windows per series if specified).
+            numpy.ndarray: Transformed data of shape [N', W, D] where N' is the number of windows.
         """
         n_series, time_length, n_features = X.shape
 
-        # Validate window size
+        # Validate window size and stride
         if self.window_size > time_length:
-            raise ValueError(
-                "Window size must be less than or equal to the time dimension length"
-            )
+            raise ValueError("Window size must be less than or equal to the time dimension length")
 
         # Calculate the total number of windows per series
         n_windows_per_series = 1 + (time_length - self.window_size) // self.stride
@@ -312,21 +297,13 @@ class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
         # Generate windows for each series using advanced indexing
         windows = X[:, window_indices, :]
 
-        # If max_windows is set and less than the total number of windows,
-        # randomly select windows
-        if self.max_windows is not None and n_windows_per_series > self.max_windows:
-            selected_indices = np.array(
-                [random.sample(range(n_windows_per_series), self.max_windows)
-                 for _ in range(n_series)])
-            windows = windows[np.arange(n_series)[:, None], selected_indices, :]
-
-        # Reshape to the desired output format:
-        # [N' (total windows across all series), W, D]
+        # Reshape to the desired output format [N' (total windows across all series), W, D]
         windows = windows.transpose(1, 0, 2, 3).reshape(-1, self.window_size, n_features)
 
+        if windows.shape[0] > self.max_windows:
+            indices = np.random.choice(windows.shape[0], self.max_windows, replace=False)
+            windows = windows[indices]
         return windows
-
-
 
 
 class SeriesLengthTrimmer(BaseEstimator, TransformerMixin):
@@ -373,10 +350,8 @@ class SeriesLengthTrimmer(BaseEstimator, TransformerMixin):
             np.ndarray: The transformed data with each series trimmed to the specified length.
         """
         _, time_length, _ = X.shape
-
         if time_length > self.trimmed_len:
             X = X[:, -self.trimmed_len:, :]
-
         return X
     
 
@@ -475,7 +450,7 @@ class TimeSeriesMinMaxScaler(BaseEstimator, TransformerMixin):
         self.min_vals_per_d = np.min(X[:, :self.encode_len, :], axis=1, keepdims=True)
         self.max_vals_per_d = np.max(X[:, :self.encode_len, :], axis=1, keepdims=True)
         self.range_per_d = self.max_vals_per_d - self.min_vals_per_d
-        self.range_per_d = np.where(self.range_per_d == 0, 1e-5, self.range_per_d)
+        self.range_per_d = np.where(self.range_per_d == 0, -1, self.range_per_d)
         return self
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -491,9 +466,8 @@ class TimeSeriesMinMaxScaler(BaseEstimator, TransformerMixin):
         if not (self.min_vals_per_d.shape[0] == X.shape[0]
                 or not self.min_vals_per_d.shape[2] == X.shape[2]):
             raise ValueError("Dimension mismatch between the input data and the fitted data.")
-
-        X_scaled = (X - self.min_vals_per_d) / self.range_per_d
-        X_scaled = np.clip(X_scaled, None, self.upper_bound)
+        X_scaled = np.where(self.range_per_d == -1, 0, (X - self.min_vals_per_d) / self.range_per_d)
+        X_scaled = np.clip(X_scaled, -self.upper_bound, self.upper_bound)
         return X_scaled
 
     def inverse_transform(self, X: np.ndarray) -> np.ndarray:
@@ -506,6 +480,9 @@ class TimeSeriesMinMaxScaler(BaseEstimator, TransformerMixin):
         Returns:
             np.ndarray: The inverse transformed data.
         """
-        X = X * self.range_per_d[:, :, :1]
-        X = X + self.min_vals_per_d[:, :, :1]
-        return X
+        rescaled_X = np.where(
+            self.range_per_d[:, :, :1] == -1,
+            X[:, :, :1] + self.min_vals_per_d[:, :, :1],
+            X[:, :, :1] * self.range_per_d[:, :, :1] + self.min_vals_per_d[:, :, :1]
+        )
+        return rescaled_X

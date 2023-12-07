@@ -20,7 +20,7 @@ from utils import (
     read_csv_in_directory,
     read_json_as_dict,
     set_seeds,
-    split_train_val_by_series
+    cast_time_col
 )
 
 logger = get_logger(task_name="train")
@@ -87,13 +87,6 @@ def run_training(
             data=train_data, data_schema=data_schema, is_train=True
         )
 
-        # split train data into training and validation sets
-        logger.info("Performing train/validation split...")
-        # train_split, val_split = split_train_val_by_series(
-        #     validated_data, val_pct=model_config["validation_split"],
-        #     id_col=data_schema.id_col
-        # )
-
         logger.info("Loading preprocessing config...")
         preprocessing_config = read_json_as_dict(preprocessing_config_file_path)
 
@@ -112,7 +105,7 @@ def run_training(
         trained_pipeline, transformed_data = fit_transform_with_pipeline(
             training_pipeline, validated_data
         )
-        print(transformed_data.shape)
+        print("Transformed training data shape:", transformed_data.shape)
 
         # Save pipelines
         logger.info("Saving pipelines...")
