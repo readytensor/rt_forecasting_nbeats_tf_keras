@@ -1,1 +1,1 @@
-# Facebook Prophet Forecaster for the Forecaster problem category as per Ready Tensor specifications.
+# NBeats Forecasting Model Implementation as per Ready Tensor specifications.
