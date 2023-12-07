@@ -95,7 +95,7 @@ class TypeCaster(BaseEstimator, TransformerMixin):
         applied_cols = [col for col in self.vars if col in data.columns]
         for var in applied_cols:
             if data[var].notnull().any():  # check if the column has any non-null values
-                data[var] = data[var].apply(self.cast_type)
+                data[var] = data[var].astype(self.cast_type)
             else:
                 # all values are null. so no-op
                 pass

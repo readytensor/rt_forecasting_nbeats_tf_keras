@@ -36,7 +36,7 @@ def create_preprocess_pipelines(
         )),
         ("float_caster", transformers.TypeCaster(
             vars=[data_schema.target] + data_schema.past_covariates,
-            cast_type=float
+            cast_type='float32'
         )),
         ("time_col_caster", transformers.TimeColCaster(
             time_col=data_schema.time_col,
