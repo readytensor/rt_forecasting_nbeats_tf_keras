@@ -250,8 +250,6 @@ class ReshaperToThreeD(BaseEstimator, TransformerMixin):
 
 #         return windows
 
-import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
 
 class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
     """
@@ -259,7 +257,7 @@ class TimeSeriesWindowGenerator(BaseEstimator, TransformerMixin):
     the maximum number of windows.
     """
 
-    def __init__(self, window_size: int, stride: int = 1, max_windows: int = None):
+    def __init__(self, window_size: int, stride: int = 1, max_windows: int = 5000):
         """
         Initializes the TimeSeriesWindowGenerator.
 
@@ -424,7 +422,8 @@ class LeftRightFlipper(BaseEstimator, TransformerMixin):
             X (np.ndarray): The input data, a collection of tensors.
 
         Returns:
-            np.ndarray: The augmented data, consisting of the original tensors and their flipped versions.
+            np.ndarray: The augmented data, consisting of the original tensors and their
+                        flipped versions.
         """
         X_flipped = np.flip(X, axis=self.axis_to_flip)
         return np.concatenate([X_flipped, X], axis=0)
@@ -443,7 +442,7 @@ class TimeSeriesMinMaxScaler(BaseEstimator, TransformerMixin):
         upper_bound (float): The upper bound to which values are capped after scaling.
     """
 
-    def __init__(self, encode_len: int, upper_bound: float = 5.0):
+    def __init__(self, encode_len: int, upper_bound: float = 3.5):
         """
         Initializes the TimeSeriesMinMaxScaler.
 

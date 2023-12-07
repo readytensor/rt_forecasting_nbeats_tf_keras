@@ -18,7 +18,14 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from prediction.nbeats_model import NBeatsNet
 
 
+# Check for GPU availability
+gpu_avai = (
+    "GPU available (YES)"
+    if tf.config.list_physical_devices("GPU")
+    else "GPU not available"
+)
 
+print(gpu_avai)
 
 PREDICTOR_FILE_NAME = "predictor.joblib"
 MODEL_PARAMS_FNAME = "model_params.save"
