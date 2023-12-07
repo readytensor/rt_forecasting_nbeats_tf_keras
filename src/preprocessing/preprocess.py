@@ -44,11 +44,14 @@ def get_preprocessing_pipelines(
     # get encode len
     encode_to_decode_ratio = default_hyperparameters["encode_to_decode_ratio"]
     encode_len = get_encode_len(data, data_schema, encode_to_decode_ratio)
+    # whether to use exogenous variables
+    use_exogenous = default_hyperparameters["use_exogenous"]
     # create training and inference pipelines
     training_pipeline, inference_pipeline = create_preprocess_pipelines(
         data_schema=data_schema,
         preprocessing_config=preprocessing_config,
-        encode_len=encode_len
+        encode_len=encode_len,
+        use_exogenous=use_exogenous
     )
     return training_pipeline, inference_pipeline, encode_len
 

@@ -11,7 +11,8 @@ from preprocessing import custom_transformers as transformers
 def create_preprocess_pipelines(
     data_schema: Any,
     preprocessing_config: dict,
-    encode_len: int
+    encode_len: int,
+    use_exogenous: bool
 ) -> Tuple[Pipeline, Pipeline]:
     """
     Constructs two preprocessing pipeline for time-series data: 
@@ -22,20 +23,26 @@ def create_preprocess_pipelines(
         preprocessing_config (dict): Configuration parameters for preprocessing, like scaler bounds.
         encode_len (int): The length of the encoding window.
         pipeline_type (str): The type of the pipeline, either 'train' or 'inference'.
+        use_exogenous (bool): Whether to use exogenous variables.
 
     Returns:
         Tuple[Pipeline, Pipeline]: Tuple of training and inference pipelines
     """
+
+    if use_exogenous is False:
+        covariates_to_use = []
+    else:
+        covariates_to_use = data_schema.past_covariates
     # Common steps for both train and inference pipelines
     common_steps = [
         ("column_selector", transformers.ColumnSelector(
             columns=(
                 [data_schema.id_col, data_schema.time_col, data_schema.target]
-                + data_schema.past_covariates
+                + covariates_to_use
             )
         )),
         ("float_caster", transformers.TypeCaster(
-            vars=[data_schema.target] + data_schema.past_covariates,
+            vars=[data_schema.target] + covariates_to_use,
             cast_type='float32'
         )),
         ("time_col_caster", transformers.TimeColCaster(
@@ -49,7 +56,7 @@ def create_preprocess_pipelines(
         ("reshaped_3d", transformers.ReshaperToThreeD(
             id_col=data_schema.id_col,
             time_col=data_schema.time_col,
-            value_columns=[data_schema.target]+data_schema.past_covariates
+            value_columns=[data_schema.target]+covariates_to_use
         ))
     ]
     training_steps = common_steps.copy()
