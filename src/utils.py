@@ -4,6 +4,7 @@ import random
 from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 
@@ -118,6 +119,7 @@ def set_seeds(seed_value: int) -> None:
         os.environ["PYTHONHASHSEED"] = str(seed_value)
         random.seed(seed_value)
         np.random.seed(seed_value)
+        tf.random.set_seed(seed_value)
     else:
         raise ValueError(f"Invalid seed value: {seed_value}. Cannot set seeds.")
 
