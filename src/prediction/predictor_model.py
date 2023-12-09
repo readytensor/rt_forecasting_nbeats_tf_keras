@@ -67,16 +67,23 @@ class Forecaster:
             share_weights_in_stack:bool=False,
             **kwargs
         ):
-        """Construct a new Adaboost Forecaster.
+        """Construct a new Nbeats Forecaster.
 
         Args:
-            n_estimators (int, optional): The maximum number of estimators
-                at which boosting is terminated.
-                Defaults to 100.
-            learning_rate (int, optional): Weight applied to each Forecaster
-                at each boosting iteration. A higher learning rate increases
-                the contribution of each Forecaster.
-                Defaults to 1e-1.
+            backcast_length (int): Encoding (history) length.
+            forecast_length (int): Decoding (forecast) length.
+            num_exog (int, optional): Number of exogenous variables.
+                                            Defaults to 0.
+            num_generic_stacks (int, optional): Number of generic stacks.
+                                            Defaults to 2.
+            nb_blocks_per_stack (int, optional): Number of blocks per stack.
+                                            Defaults to 2.
+            thetas_dim_per_stack (int, optional): Number of expansion coefficients.
+                                            Defaults to 16.
+            hidden_layer_units (int, optional): Hidden layer units.
+                                            Defaults to 32.
+            share_weights_in_stack (boolean, optional): Whether to share weights within stacks.
+                                            Defaults to False.
         """
         self.backcast_length = backcast_length
         self.forecast_length = forecast_length
