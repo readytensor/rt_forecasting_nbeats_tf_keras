@@ -106,12 +106,6 @@ def run_batch_predictions(
         validated_train_data = validate_data(
             data=train_data, data_schema=data_schema, is_train=True
         )
-        # print(validated_train_data.head())
-        # # aotizhongxin_aq
-        # validated_train_data = validated_train_data[validated_train_data['station'] == 'aotizhongxin_aq']
-        # print(validated_train_data.head())
-        # print(validated_train_data.tail())
-        # print(validated_train_data.shape)
         
         # we need the test data to return our final predictions with right columns
         logger.info("Loading test data...")
@@ -132,8 +126,6 @@ def run_batch_predictions(
         _, transformed_train_data = fit_transform_with_pipeline(
             inference_pipeline, validated_train_data
         )
-        print(transformed_train_data.shape)
-        # print("min/max", transformed_train_data[0, :, 0].max(), transformed_train_data[0, :, 0].min())
 
         logger.info("Loading predictor model...")
         predictor_model = load_predictor_model(predictor_dir_path)
@@ -143,13 +135,11 @@ def run_batch_predictions(
             predictor_model,
             transformed_train_data
         )
-        print("predictions_arr", predictions_arr.shape)
 
         logger.info("Rescaling predictions...")
         rescaled_preds_arr = inverse_scale_predictions(
             predictions_arr, inference_pipeline
-        )     
-        print("rescaled_preds_arr", rescaled_preds_arr.shape)   
+        )
 
         logger.info("Creating final predictions dataframe...")
         predictions_df = create_predictions_dataframe(
