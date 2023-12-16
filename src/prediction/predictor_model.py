@@ -286,8 +286,7 @@ class Forecaster:
         return forecaster_model
 
     def __str__(self):
-        # sort params alphabetically for unit test to run successfully
-        return f"Model name: {self.model_name}"
+        return f"Model name: {self.MODEL_NAME}"
 
 
 def train_predictor_model(
