@@ -3,24 +3,22 @@ import sys
 
 from config import paths
 from data_models.data_validator import validate_data
-from hyperparameter_tuning.tuner import tune_hyperparameters
 from logger import get_logger, log_error
 from prediction.predictor_model import (
-    evaluate_predictor_model,
     save_predictor_model,
     train_predictor_model,
 )
 from preprocessing.preprocess import (
     get_preprocessing_pipelines,
     fit_transform_with_pipeline,
-    save_pipelines
+    save_pipelines,
+    offset_future_covariates_per_series
 )
 from schema.data_schema import load_json_data_schema, save_schema
 from utils import (
     read_csv_in_directory,
     read_json_as_dict,
-    set_seeds,
-    cast_time_col
+    set_seeds
 )
 
 logger = get_logger(task_name="train")
@@ -96,7 +94,16 @@ def run_training(
             default_hyperparameters_file_path
         )
 
-        # fit and transform using pipeline and target encoder, then save them
+        # offset future covariates (if any)
+        logger.info("Offsetting future covariates...")
+        validated_data = offset_future_covariates_per_series(
+            history_data=validated_data,
+            forecast_data=None,
+            forecast_length=data_schema.forecast_length,
+            data_schema=data_schema
+        )
+
+        # fit and transform using pipeline
         logger.info("Training preprocessing pipeline...")
         training_pipeline, inference_pipeline, encode_len = get_preprocessing_pipelines(
             data_schema, validated_data, preprocessing_config,
@@ -105,7 +112,6 @@ def run_training(
         trained_pipeline, transformed_data = fit_transform_with_pipeline(
             training_pipeline, validated_data
         )
-        print("Transformed training data shape:", transformed_data.shape)
 
         # Save pipelines
         logger.info("Saving pipelines...")

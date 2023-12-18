@@ -12,7 +12,8 @@ from prediction.predictor_model import load_predictor_model, predict_with_model
 from preprocessing.preprocess import (
     load_pipeline_of_type,
     fit_transform_with_pipeline,
-    inverse_scale_predictions
+    inverse_scale_predictions,
+    offset_future_covariates_per_series
 )
 from schema.data_schema import load_saved_schema
 from utils import (
@@ -115,6 +116,15 @@ def run_batch_predictions(
         logger.info("Validating test data...")
         validated_test_data = validate_data(
             data=test_data, data_schema=data_schema, is_train=False
+        )
+
+        # offset future covariates (if any)
+        logger.info("Offsetting future covariates...")
+        validated_test_data = offset_future_covariates_per_series(
+            history_data=validated_test_data,
+            forecast_data=test_data,
+            forecast_length=data_schema.forecast_length,
+            data_schema=data_schema
         )
 
         # fit and transform using pipeline and target encoder, then save them
