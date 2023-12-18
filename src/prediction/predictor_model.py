@@ -7,8 +7,6 @@ import math
 import joblib
 import numpy as np
 import pandas as pd
-# from prophet import Prophet
-from multiprocessing import Pool, cpu_count
 from sklearn.exceptions import NotFittedError
 
 warnings.filterwarnings("ignore")
