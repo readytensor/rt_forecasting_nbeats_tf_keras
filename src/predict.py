@@ -1,4 +1,4 @@
-from typing import List
+import time
 
 import numpy as np
 import pandas as pd
@@ -92,6 +92,7 @@ def run_batch_predictions(
     """
 
     try:
+        start = time.time()
         logger.info("Making batch predictions...")
 
         logger.info("Loading schema...")
@@ -170,7 +171,12 @@ def run_batch_predictions(
             dataframe=validated_predictions, file_path=predictions_file_path
         )
 
-        logger.info("Batch predictions completed successfully")
+        end = time.time()
+        elapsed_time = end - start
+        logger.info(
+            "Batch predictions completed successfully "
+            f"in {round(elapsed_time/60., 3)} minutes"
+        )
 
     except Exception as exc:
         err_msg = "Error occurred during prediction."
