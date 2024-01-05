@@ -114,7 +114,7 @@ def run_training(
 
         end = time.time()
         elapsed_time = end - start
-        logger.info(f"Training completed successfully in {round(elapsed_time/60., 3)} minutes")
+        logger.info(f"Training completed in {round(elapsed_time/60., 3)} minutes")
 
     except Exception as exc:
         err_msg = "Error occurred during training."

@@ -174,7 +174,7 @@ def run_batch_predictions(
         end = time.time()
         elapsed_time = end - start
         logger.info(
-            "Batch predictions completed successfully "
+            "Batch predictions completed "
             f"in {round(elapsed_time/60., 3)} minutes"
         )
 
