@@ -11,13 +11,13 @@ from preprocessing.preprocess import (
     get_preprocessing_pipelines,
     fit_transform_with_pipeline,
     save_pipelines,
-    offset_future_covariates_per_series
 )
 from schema.data_schema import load_json_data_schema, save_schema
 from utils import (
     read_csv_in_directory,
     read_json_as_dict,
-    set_seeds
+    set_seeds,
+    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="train")
@@ -53,7 +53,6 @@ def run_training(
     try:
 
         logger.info("Starting training...")
-        start = time.time()
         # load and save schema
         logger.info("Loading and saving schema...")
         data_schema = load_json_data_schema(input_schema_dir)
@@ -82,15 +81,12 @@ def run_training(
 
         # use default hyperparameters to train model
         logger.info("Loading hyperparameters...")
-        default_hyperparameters = read_json_as_dict(
-            default_hyperparameters_file_path
-        )        
+        default_hyperparameters = read_json_as_dict(default_hyperparameters_file_path)
 
         # fit and transform using pipeline
         logger.info("Training preprocessing pipeline...")
         training_pipeline, inference_pipeline, encode_len = get_preprocessing_pipelines(
-            data_schema, validated_data, preprocessing_config,
-            default_hyperparameters
+            data_schema, validated_data, preprocessing_config, default_hyperparameters
         )
         trained_pipeline, transformed_data = fit_transform_with_pipeline(
             training_pipeline, validated_data
@@ -102,19 +98,16 @@ def run_training(
 
         # # use default hyperparameters to train model
         logger.info("Training forecaster...")
-        forecaster = train_predictor_model(
-            history=transformed_data,
-            forecast_length=data_schema.forecast_length,
-            hyperparameters=default_hyperparameters
-        )
+        with TimeAndMemoryTracker(logger) as _:
+            forecaster = train_predictor_model(
+                history=transformed_data,
+                forecast_length=data_schema.forecast_length,
+                hyperparameters=default_hyperparameters,
+            )
 
         # save predictor model
         logger.info("Saving forecaster...")
         save_predictor_model(forecaster, predictor_dir_path)
-
-        end = time.time()
-        elapsed_time = end - start
-        logger.info(f"Training completed in {round(elapsed_time/60., 3)} minutes")
 
     except Exception as exc:
         err_msg = "Error occurred during training."
