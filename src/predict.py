@@ -20,7 +20,8 @@ from utils import (
     read_csv_in_directory,
     read_json_as_dict,
     save_dataframe_as_csv,
-    cast_time_col
+    cast_time_col,
+    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="predict")
@@ -92,91 +93,86 @@ def run_batch_predictions(
     """
 
     try:
-        start = time.time()
-        logger.info("Making batch predictions...")
+        with TimeAndMemoryTracker(logger) as _:
+            logger.info("Making batch predictions...")
 
-        logger.info("Loading schema...")
-        data_schema = load_saved_schema(saved_schema_dir_path)
+            logger.info("Loading schema...")
+            data_schema = load_saved_schema(saved_schema_dir_path)
 
-        logger.info("Loading model config...")
-        model_config = read_json_as_dict(model_config_file_path)
+            logger.info("Loading model config...")
+            model_config = read_json_as_dict(model_config_file_path)
 
-        # we need history to make predictions
-        logger.info("Loading training data...")
-        train_data = read_csv_in_directory(file_dir_path=train_dir)
-        logger.info("Validating training data...")
-        validated_train_data = validate_data(
-            data=train_data, data_schema=data_schema, is_train=True
-        )
+            # we need history to make predictions
+            logger.info("Loading training data...")
+            train_data = read_csv_in_directory(file_dir_path=train_dir)
+            logger.info("Validating training data...")
+            validated_train_data = validate_data(
+                data=train_data, data_schema=data_schema, is_train=True
+            )
 
-        # we need the test data to return our final predictions with right columns
-        logger.info("Loading test data...")
-        test_data = read_csv_in_directory(file_dir_path=test_dir)
-        test_data = cast_time_col(
-            test_data, data_schema.time_col, data_schema.time_col_dtype)
-        logger.info("Validating test data...")
-        validated_test_data = validate_data(
-            data=test_data, data_schema=data_schema, is_train=False
-        )
+            # we need the test data to return our final predictions with right columns
+            logger.info("Loading test data...")
+            test_data = read_csv_in_directory(file_dir_path=test_dir)
+            test_data = cast_time_col(
+                test_data, data_schema.time_col, data_schema.time_col_dtype)
+            logger.info("Validating test data...")
+            validated_test_data = validate_data(
+                data=test_data, data_schema=data_schema, is_train=False
+            )
 
-        # offset future covariates (if any)
-        logger.info("Offsetting future covariates...")
-        validated_test_data = offset_future_covariates_per_series(
-            history_data=validated_test_data,
-            forecast_data=test_data,
-            forecast_length=data_schema.forecast_length,
-            data_schema=data_schema
-        )
+            # offset future covariates (if any)
+            logger.info("Offsetting future covariates...")
+            validated_test_data = offset_future_covariates_per_series(
+                history_data=validated_test_data,
+                forecast_data=test_data,
+                forecast_length=data_schema.forecast_length,
+                data_schema=data_schema
+            )
 
-        # fit and transform using pipeline and target encoder, then save them
-        logger.info("Loading preprocessing pipeline ...")
-        inference_pipeline = load_pipeline_of_type(
-            preprocessing_dir_path,
-            pipeline_type="inference"
-        )
-        _, transformed_train_data = fit_transform_with_pipeline(
-            inference_pipeline, validated_train_data
-        )
+            # fit and transform using pipeline and target encoder, then save them
+            logger.info("Loading preprocessing pipeline ...")
+            inference_pipeline = load_pipeline_of_type(
+                preprocessing_dir_path,
+                pipeline_type="inference"
+            )
+            _, transformed_train_data = fit_transform_with_pipeline(
+                inference_pipeline, validated_train_data
+            )
 
-        logger.info("Loading predictor model...")
-        predictor_model = load_predictor_model(predictor_dir_path)
+            logger.info("Loading predictor model...")
+            predictor_model = load_predictor_model(predictor_dir_path)
 
-        logger.info("Making predictions...")
-        predictions_arr = predict_with_model(
-            predictor_model,
-            transformed_train_data
-        )
+            logger.info("Making predictions...")
+            predictions_arr = predict_with_model(
+                predictor_model,
+                transformed_train_data
+            )
 
-        logger.info("Rescaling predictions...")
-        rescaled_preds_arr = inverse_scale_predictions(
-            predictions_arr, inference_pipeline
-        )
+            logger.info("Rescaling predictions...")
+            rescaled_preds_arr = inverse_scale_predictions(
+                predictions_arr, inference_pipeline
+            )
 
-        logger.info("Creating final predictions dataframe...")
-        predictions_df = create_predictions_dataframe(
-            pred_input=validated_test_data,
-            predictions_arr=rescaled_preds_arr,
-            prediction_field_name=model_config["prediction_field_name"],
-            id_field_name=data_schema.id_col,
-            time_field_name=data_schema.time_col
-        )
+            logger.info("Creating final predictions dataframe...")
+            predictions_df = create_predictions_dataframe(
+                pred_input=validated_test_data,
+                predictions_arr=rescaled_preds_arr,
+                prediction_field_name=model_config["prediction_field_name"],
+                id_field_name=data_schema.id_col,
+                time_field_name=data_schema.time_col
+            )
 
-        logger.info("Validating predictions dataframe...")
-        validated_predictions = validate_predictions(
-            predictions_df, data_schema, model_config["prediction_field_name"]
-        )
+            logger.info("Validating predictions dataframe...")
+            validated_predictions = validate_predictions(
+                predictions_df, data_schema, model_config["prediction_field_name"]
+            )
 
         logger.info("Saving predictions dataframe...")
         save_dataframe_as_csv(
             dataframe=validated_predictions, file_path=predictions_file_path
         )
 
-        end = time.time()
-        elapsed_time = end - start
-        logger.info(
-            "Batch predictions completed "
-            f"in {round(elapsed_time/60., 3)} minutes"
-        )
+        logger.info("Batch predictions completed successfully")
 
     except Exception as exc:
         err_msg = "Error occurred during prediction."
