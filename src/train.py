@@ -18,6 +18,8 @@ from utils import (
     read_json_as_dict,
     set_seeds,
     TimeAndMemoryTracker,
+    set_seeds,
+    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="train")
@@ -59,6 +61,11 @@ def run_training(
             logger.info("Loading and saving schema...")
             data_schema = load_json_data_schema(input_schema_dir)
             save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
+        logger.info("Starting training...")
+        # load and save schema
+        logger.info("Loading and saving schema...")
+        data_schema = load_json_data_schema(input_schema_dir)
+        save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
 
             # load model config
             logger.info("Loading model config...")
@@ -113,10 +120,6 @@ def run_training(
         # save predictor model
         logger.info("Saving forecaster...")
         save_predictor_model(forecaster, predictor_dir_path)
-
-        end = time.time()
-        elapsed_time = end - start
-        logger.info(f"Training completed in {round(elapsed_time/60., 3)} minutes")
 
     except Exception as exc:
         err_msg = "Error occurred during training."

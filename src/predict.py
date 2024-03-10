@@ -1,8 +1,5 @@
-import time
-
 import numpy as np
 import pandas as pd
-import sys
 
 from config import paths
 from data_models.data_validator import validate_data
@@ -13,7 +10,7 @@ from preprocessing.preprocess import (
     load_pipeline_of_type,
     fit_transform_with_pipeline,
     inverse_scale_predictions,
-    offset_future_covariates_per_series
+    offset_future_covariates_per_series,
 )
 from schema.data_schema import load_saved_schema
 from utils import (
@@ -22,18 +19,20 @@ from utils import (
     save_dataframe_as_csv,
     cast_time_col,
     TimeAndMemoryTracker,
+    cast_time_col,
+    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="predict")
 
 
 def create_predictions_dataframe(
-        pred_input: pd.DataFrame,
-        predictions_arr: np.ndarray,
-        prediction_field_name: str,
-        id_field_name: str,
-        time_field_name: str
-    ) -> pd.DataFrame:
+    pred_input: pd.DataFrame,
+    predictions_arr: np.ndarray,
+    prediction_field_name: str,
+    id_field_name: str,
+    time_field_name: str,
+) -> pd.DataFrame:
     """
     Converts the predictions numpy array into a dataframe having the required structure.
 
@@ -51,12 +50,16 @@ def create_predictions_dataframe(
     N_test = pred_input[id_field_name].unique().shape[0]
     T_test = pred_input[time_field_name].unique().shape[0]
     if N_train != N_test:
-        raise ValueError(f"Number of series in test input ({N_test}) does not match"
-                         f"# of series in train data ({N_train})")
+        raise ValueError(
+            f"Number of series in test input ({N_test}) does not match"
+            f"# of series in train data ({N_train})"
+        )
     if T_train != T_test:
-        raise ValueError(f"Length of series in test input ({N_test}) does not match"
-                         f"expected forecast window length ({N_train})")
-    
+        raise ValueError(
+            f"Length of series in test input ({N_test}) does not match"
+            f"expected forecast window length ({N_train})"
+        )
+
     predictions_df = pred_input[[id_field_name, time_field_name]].copy()
     predictions_df.sort_values(by=[id_field_name, time_field_name], inplace=True)
     predictions_df[prediction_field_name] = np.squeeze(predictions_arr).flatten()
