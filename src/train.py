@@ -61,11 +61,6 @@ def run_training(
             logger.info("Loading and saving schema...")
             data_schema = load_json_data_schema(input_schema_dir)
             save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
-        logger.info("Starting training...")
-        # load and save schema
-        logger.info("Loading and saving schema...")
-        data_schema = load_json_data_schema(input_schema_dir)
-        save_schema(schema=data_schema, save_dir_path=saved_schema_dir_path)
 
             # load model config
             logger.info("Loading model config...")
