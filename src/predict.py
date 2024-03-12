@@ -19,8 +19,6 @@ from utils import (
     save_dataframe_as_csv,
     cast_time_col,
     TimeAndMemoryTracker,
-    cast_time_col,
-    TimeAndMemoryTracker,
 )
 
 logger = get_logger(task_name="predict")
@@ -117,7 +115,8 @@ def run_batch_predictions(
             logger.info("Loading test data...")
             test_data = read_csv_in_directory(file_dir_path=test_dir)
             test_data = cast_time_col(
-                test_data, data_schema.time_col, data_schema.time_col_dtype)
+                test_data, data_schema.time_col, data_schema.time_col_dtype
+            )
             logger.info("Validating test data...")
             validated_test_data = validate_data(
                 data=test_data, data_schema=data_schema, is_train=False
@@ -129,14 +128,13 @@ def run_batch_predictions(
                 history_data=validated_test_data,
                 forecast_data=test_data,
                 forecast_length=data_schema.forecast_length,
-                data_schema=data_schema
+                data_schema=data_schema,
             )
 
             # fit and transform using pipeline and target encoder, then save them
             logger.info("Loading preprocessing pipeline ...")
             inference_pipeline = load_pipeline_of_type(
-                preprocessing_dir_path,
-                pipeline_type="inference"
+                preprocessing_dir_path, pipeline_type="inference"
             )
             _, transformed_train_data = fit_transform_with_pipeline(
                 inference_pipeline, validated_train_data
@@ -147,8 +145,7 @@ def run_batch_predictions(
 
             logger.info("Making predictions...")
             predictions_arr = predict_with_model(
-                predictor_model,
-                transformed_train_data
+                predictor_model, transformed_train_data
             )
 
             logger.info("Rescaling predictions...")
@@ -162,7 +159,7 @@ def run_batch_predictions(
                 predictions_arr=rescaled_preds_arr,
                 prediction_field_name=model_config["prediction_field_name"],
                 id_field_name=data_schema.id_col,
-                time_field_name=data_schema.time_col
+                time_field_name=data_schema.time_col,
             )
 
             logger.info("Validating predictions dataframe...")

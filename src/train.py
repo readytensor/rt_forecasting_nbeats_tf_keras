@@ -1,5 +1,3 @@
-import time
-
 from config import paths
 from data_models.data_validator import validate_data
 from logger import get_logger, log_error
@@ -16,8 +14,6 @@ from schema.data_schema import load_json_data_schema, save_schema
 from utils import (
     read_csv_in_directory,
     read_json_as_dict,
-    set_seeds,
-    TimeAndMemoryTracker,
     set_seeds,
     TimeAndMemoryTracker,
 )
@@ -56,7 +52,6 @@ def run_training(
         with TimeAndMemoryTracker(logger) as _:
 
             logger.info("Starting training...")
-            start = time.time()
             # load and save schema
             logger.info("Loading and saving schema...")
             data_schema = load_json_data_schema(input_schema_dir)
@@ -87,13 +82,17 @@ def run_training(
             logger.info("Loading hyperparameters...")
             default_hyperparameters = read_json_as_dict(
                 default_hyperparameters_file_path
-            )        
+            )
 
             # fit and transform using pipeline
             logger.info("Training preprocessing pipeline...")
-            training_pipeline, inference_pipeline, encode_len = get_preprocessing_pipelines(
-                data_schema, validated_data, preprocessing_config,
-                default_hyperparameters
+            training_pipeline, inference_pipeline, encode_len = (
+                get_preprocessing_pipelines(
+                    data_schema,
+                    validated_data,
+                    preprocessing_config,
+                    default_hyperparameters,
+                )
             )
             trained_pipeline, transformed_data = fit_transform_with_pipeline(
                 training_pipeline, validated_data
@@ -105,7 +104,7 @@ def run_training(
             forecaster = train_predictor_model(
                 history=transformed_data,
                 forecast_length=data_schema.forecast_length,
-                hyperparameters=default_hyperparameters
+                hyperparameters=default_hyperparameters,
             )
 
         # Save pipelines
