@@ -49,7 +49,7 @@ def run_training(
     """
 
     try:
-        with ResourceTracker(logger, monitoring_interval=0.1):
+        with ResourceTracker(logger, monitoring_interval=0.1, is_train=True):
 
             logger.info("Starting training...")
             # load and save schema
